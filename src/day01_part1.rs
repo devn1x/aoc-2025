@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-const INPUT_PATH: &str = "input/01/input_1.txt";
+const INPUT_PATH: &str = "input/01/input.txt";
 const INITIAL_VALUE: i32 = 50;
 
 #[derive(Debug)]
