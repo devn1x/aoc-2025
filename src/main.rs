@@ -8,6 +8,8 @@ mod day03_part1;
 mod day03_part2;
 mod day04_part1;
 mod day04_part2;
+mod day05_part1;
+mod day05_part2;
 
 #[derive(Debug)]
 struct Puzzle {
@@ -25,7 +27,9 @@ fn main() {
         Puzzle { day: 3, part: 1, main: day03_part1::main },
         Puzzle { day: 3, part: 2, main: day03_part2::main },
         Puzzle { day: 4, part: 1, main: day04_part1::main },
-        Puzzle { day: 4, part: 2, main: day04_part2::main }
+        Puzzle { day: 4, part: 2, main: day04_part2::main },
+        Puzzle { day: 5, part: 1, main: day05_part1::main },
+        Puzzle { day: 5, part: 2, main: day05_part2::main }
     ];
 
     let args: Vec<String> = env::args().collect();
