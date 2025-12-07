@@ -105,23 +105,3 @@ fn parse(lines: &Vec<&str>) -> Vec<Problem> {
     }
     result
 }
-
-#[test]
-fn test_examples() {
-    // let content = fs::read_to_string(INPUT_PATH).unwrap();
-    // let lines: Vec<_> = content.lines().collect();
-    // let lines_transformed = transform(&lines);
-    // let solution = vec![
-    //     "  4 175   8 356",
-    //     "431 581 248  24",
-    //     "623  32 369   1",
-    //     "+   *   +   *",
-    // ];
-    // assert_eq!(
-    //     format!("{:?}", solution),
-    //     format!("{:?}", lines_transformed)
-    // );
-    // assert_eq!(888911112111, max_joltage("811111111111119", 12));
-    // assert_eq!(434234234278, max_joltage("234234234234278", 12));
-    // assert_eq!(888911112111, max_joltage("818181911112111", 12));
-}
