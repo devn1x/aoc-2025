@@ -54,11 +54,3 @@ fn in_range(ranges: &HashMap<(u64, u64), FreshRange>, ingredient: u64) -> bool {
     }).collect();
     filtered_ranges.len() >= 1
 }
-
-#[test]
-fn test_examples() {
-    // assert_eq!(987654321111, max_joltage("987654321111111", 12));
-    // assert_eq!(888911112111, max_joltage("811111111111119", 12));
-    // assert_eq!(434234234278, max_joltage("234234234234278", 12));
-    // assert_eq!(888911112111, max_joltage("818181911112111", 12));
-}
