@@ -4,8 +4,8 @@ use std::{
     io::{Write, stdout},
 };
 
-//const INPUT_PATH: &str = "input/09/example.txt";
-const INPUT_PATH: &str = "input/09/input.txt";
+const INPUT_PATH: &str = "input/09/example.txt";
+//const INPUT_PATH: &str = "input/09/input.txt";
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Point {
@@ -42,7 +42,7 @@ impl FloorMap {
         let width = (max_x - min_x + 1) as usize;
         let height = (max_y - min_y + 1) as usize;
 
-        const SCALE: i64 = 1000;
+        const SCALE: i64 = 1;
 
         writeln!(&file, "P3")?;
         writeln!(&file, "{} {}", width/SCALE as usize, height/SCALE as usize)?;
@@ -53,22 +53,22 @@ impl FloorMap {
                 let is_red = self.red.iter().any(|g| {
                     let gx = g.x - min_x;
                     let gy = g.y - min_y;
-                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+SCALE-1)*SCALE) &&
-                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+SCALE-1)*SCALE)
+                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+1)*SCALE) &&
+                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+1)*SCALE)
                 });
                 let is_green = self.green.iter().any(|g| {
                     let gx = g.x - min_x;
                     let gy = g.y - min_y;
-                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+SCALE-1)*SCALE) &&
-                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+SCALE-1)*SCALE)
+                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+1)*SCALE) &&
+                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+1)*SCALE)
                 });
 
                 if is_red {
-                    write!(&file, "255 0 0    ")?;
+                    write!(&file, "255 0 0 ")?;
                 } else if is_green {
-                    write!(&file, "0 255 0    ")?;
+                    write!(&file, "0 255 0 ")?;
                 } else {
-                    write!(&file, "255 255 255    ")?;
+                    write!(&file, "255 255 255 ")?;
                 }
             }
             writeln!(&file)?;
@@ -118,7 +118,7 @@ pub fn main() {
         let parts: Vec<i64> = line.split(",").map(|e| e.parse().unwrap()).collect();
         let point = Point {
             x: parts[0],
-            y: parts[1],
+            y: parts[1]
         };
         map.red.push(point);
     }
@@ -127,13 +127,8 @@ pub fn main() {
     green_tiles_border(&mut map);
     println!("Green borders drawn");
 
-    map.save_ppm("day09_part2_initial.ppm");
-
-    //println!("{}", map);
-
-    //fill_green_tiles(&mut map);
-
-    //println!("{}", map);
+    map.save_ppm("day09_part2_initial.ppm").unwrap();
+    println!("Initial map saved:\n{}", map);
 
     let total = solve(&mut map);
 
@@ -152,28 +147,7 @@ fn solve(map: &mut FloorMap) -> i64 {
     }
     println!("Total combinations: {}", combinations.len());
 
-    // let mut combinations: Vec<_> = combinations
-    //     .iter()
-    //     .filter(|combination| validate_combination(map, combination))
-    //     .collect();
-
     combinations.sort_by_cached_key(|p| {
-        // if p.0.x == 11 && p.1.x == 2 {
-        //     println!(
-        //         "Considering pair: {:?} and {:?} => {}",
-        //         p.0,
-        //         p.1,
-        //         area(p.0, p.1)
-        //     );
-        // }
-        // if p.0.x == 9 && p.1.x == 2 {
-        //     println!(
-        //         "Considering pair: {:?} and {:?} => {}",
-        //         p.0,
-        //         p.1,
-        //         area(p.0, p.1)
-        //     );
-        // }
         area(p.0, p.1)
     });
     combinations.reverse();
