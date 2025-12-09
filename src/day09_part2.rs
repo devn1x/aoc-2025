@@ -42,21 +42,31 @@ impl FloorMap {
         let width = (max_x - min_x + 1) as usize;
         let height = (max_y - min_y + 1) as usize;
 
-        const SCALE: usize = 1000;
+        const SCALE: i64 = 1000;
 
         writeln!(&file, "P3")?;
-        writeln!(&file, "{} {}", width/SCALE, height/SCALE)?;
+        writeln!(&file, "{} {}", width/SCALE as usize, height/SCALE as usize)?;
         writeln!(&file, "255")?;
 
         for y in 0..=height {
             for x in 0..=width {
-                let is_green = self.green.iter().filter(|g| {
-                    g.x >= SCALE * x && g.x < SCALE * (x + 1)
+                let is_red = self.red.iter().any(|g| {
+                    let gx = g.x - min_x;
+                    let gy = g.y - min_y;
+                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+SCALE-1)*SCALE) &&
+                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+SCALE-1)*SCALE)
                 });
-                if is_green.any() {
-                    write!(&file, "0 255 0    ")?;
-                } else if self.red.contains(&point) {
+                let is_green = self.green.iter().any(|g| {
+                    let gx = g.x - min_x;
+                    let gy = g.y - min_y;
+                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+SCALE-1)*SCALE) &&
+                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+SCALE-1)*SCALE)
+                });
+
+                if is_red {
                     write!(&file, "255 0 0    ")?;
+                } else if is_green {
+                    write!(&file, "0 255 0    ")?;
                 } else {
                     write!(&file, "255 255 255    ")?;
                 }
