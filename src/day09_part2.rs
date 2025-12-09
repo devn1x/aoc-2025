@@ -48,8 +48,8 @@ impl FloorMap {
         writeln!(&file, "{} {}", width/SCALE as usize, height/SCALE as usize)?;
         writeln!(&file, "255")?;
 
-        for y in 0..=height {
-            for x in 0..=width {
+        for y in 0..height {
+            for x in 0..width {
                 let is_red = self.red.iter().any(|g| {
                     let gx = g.x - min_x;
                     let gy = g.y - min_y;
