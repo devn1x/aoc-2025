@@ -57,11 +57,14 @@ pub fn main() {
         let circuit_idx = circuit_index_by_junction(&circuits, &shortest_connection.0);
         let circuit2_idx = circuit_index_by_junction(&circuits, &shortest_connection.1);
 
+        let circuit2 = circuits[circuit2_idx].clone();
         let circuit = &mut circuits[circuit_idx];
-        let circuit2 = circuits[circuit_index_by_junction(&circuits, &shortest_connection.1)].clone();
         circuit.extend(&circuit2);
-        //circuits.retain(|c| c != circuit2);
+
+        circuits.remove(circuit2_idx);
     }
+
+    println!("Final circuits: {:?}", circuits);
 
     println!();
     println!("Total: {}", total);
@@ -85,14 +88,14 @@ fn shortest_distance(circuits: &Vec<Circuit>) -> (Vector3, Vector3) {
         }
     };
 
-    println!("Distance pairs: {:#?}", distance_pairs);
+    //println!("Distance pairs: {:#?}", distance_pairs);
 
     let mut sorted_pairs = distance_pairs.iter().collect::<Vec<_>>();
     sorted_pairs.sort_by_cached_key(|element| {
         element.1
     });
 
-    println!("Sorted pairs: {:#?}", sorted_pairs);
+    //println!("Sorted pairs: {:#?}", sorted_pairs);
     sorted_pairs.first().unwrap().0.clone()
 }
 
