@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, fs};
+use std::{collections::{HashMap}, fs};
 
 const INPUT_PATH: &str = "input/08/example.txt";
 //const INPUT_PATH: &str = "input/08/input.txt";
