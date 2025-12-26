@@ -5,4 +5,5 @@ edition = "2024"
 authors = ["devn1x"]
 
 [dependencies]
-nannou = { git = "https://github.com/nannou-org/nannou.git", branch = "bevy-refactor" }
+#nannou = { git = "https://github.com/nannou-org/nannou.git", branch = "bevy-refactor" }
+nannou = { git = "https://github.com/nannou-org/nannou.git", branch = "master" }
