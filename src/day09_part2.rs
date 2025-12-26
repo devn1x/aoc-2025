@@ -267,21 +267,6 @@ fn green_tiles_border(map: &mut FloorMap) {
     }
 }
 
-fn fill_green_tiles(map: &mut FloorMap) {
-    let (min_x, max_x, min_y, max_y) = map.bounding_box();
-
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            let point = Point { x, y };
-            if is_inside(map, point) {
-                if !map.red.contains(&point) {
-                    map.green.push(point);
-                }
-            }
-        }
-    }
-}
-
 fn is_inside(map: &FloorMap, point: Point) -> bool {
     let has_green_left = map.green.iter().any(|p| p.y == point.y && p.x < point.x);
     if !has_green_left {

@@ -1,3 +1,4 @@
 #!/bin/bash
 
-RUSTFLAGS=-Awarnings cargo run -q -- $1
+RUSTFLAGS=-Awarnings
+cargo run --release -- $1
