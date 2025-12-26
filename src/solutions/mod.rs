@@ -1,0 +1,17 @@
+pub mod day01_part1;
+pub mod day01_part2;
+pub mod day02_part1;
+pub mod day02_part2;
+pub mod day03_part1;
+pub mod day03_part2;
+pub mod day04_part1;
+pub mod day04_part2;
+pub mod day05_part1;
+pub mod day05_part2;
+pub mod day06_part1;
+pub mod day06_part2;
+pub mod day07_part1;
+pub mod day07_part2;
+pub mod day08_part1;
+pub mod day09_part1;
+pub mod day09_part2;
