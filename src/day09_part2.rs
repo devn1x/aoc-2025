@@ -4,19 +4,36 @@ use std::{
     io::{Write, stdout},
 };
 
-const INPUT_PATH: &str = "input/09/example.txt";
-//const INPUT_PATH: &str = "input/09/input.txt";
+//const INPUT_PATH: &str = "input/09/example.txt";
+const INPUT_PATH: &str = "input/09/input.txt";
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 struct Point {
     x: i64,
     y: i64,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+const COLOR_RED: Color = Color { r: 255, g: 0, b: 0 };
+const COLOR_GREEN: Color = Color { r: 0, g: 255, b: 0 };
+const COLOR_WHITE: Color = Color {
+    r: 255,
+    g: 255,
+    b: 255,
+};
+
 #[derive(Debug, PartialEq, Eq)]
 struct FloorMap {
     red: Vec<Point>,
-    green: Vec<Point>
+    green: Vec<Point>,
+    x_map: Vec<i64>,
+    y_map: Vec<i64>,
 }
 
 impl FloorMap {
@@ -42,34 +59,80 @@ impl FloorMap {
         let width = (max_x - min_x + 1) as usize;
         let height = (max_y - min_y + 1) as usize;
 
-        const SCALE: i64 = 1;
+        const SCALE: i64 = 200;
+
+        let image_width = width / SCALE as usize + 10;
+        let image_height = height as usize / SCALE as usize + 10;
+
+        let mut pixels = vec![vec![COLOR_WHITE; image_width]; image_height];
+
+        for green in &self.green {
+            let gx = green.x - min_x;
+            let gy = green.y - min_y;
+
+            let x_idx = (gx / SCALE) as usize;
+            let y_idx = (gy / SCALE) as usize;
+            pixels[y_idx][x_idx] = COLOR_GREEN;
+        }
+
+        for red in &self.red {
+            let rx = red.x - min_x;
+            let ry = red.y - min_y;
+
+            let x_idx = (rx / SCALE) as usize;
+            let y_idx = (ry / SCALE) as usize;
+            pixels[y_idx][x_idx] = COLOR_RED;
+        }
 
         writeln!(&file, "P3")?;
-        writeln!(&file, "{} {}", width/SCALE as usize, height/SCALE as usize)?;
+        writeln!(&file, "{} {}", image_width, image_height)?;
+        writeln!(&file, "255")?;
+
+        for y in 0..image_height {
+            for x in 0..image_width {
+                let pixel = pixels[y][x];
+                write!(&file, "{} {} {} ", pixel.r, pixel.g, pixel.b)?;
+            }
+            writeln!(&file)?;
+        }
+        Ok(())
+    }
+
+    fn save_ppm_compressed(self: &Self, path: &str) -> Result<(), std::io::Error> {
+        let file = fs::File::create(path).unwrap();
+        const PADDING: i64 = 0;
+
+        let (min_x, max_x, min_y, max_y) = self.bounding_box();
+        let min_x = min_x - PADDING;
+        let max_x = max_x + PADDING;
+        let min_y = min_y - PADDING;
+        let max_y = max_y + PADDING;
+
+        let width = (max_x - min_x + 1) as usize;
+        let height = (max_y - min_y + 1) as usize;
+
+        let mut pixels = vec![vec![COLOR_WHITE; width]; height];
+
+        for green in &self.green {
+            let gx = (green.x - min_x) as usize;
+            let gy = (green.y - min_y) as usize;
+            pixels[gy][gx] = COLOR_GREEN;
+        }
+
+        for red in &self.red {
+            let rx = (red.x - min_x) as usize;
+            let ry = (red.y - min_y) as usize;
+            pixels[ry][rx] = COLOR_RED;
+        }
+
+        writeln!(&file, "P3")?;
+        writeln!(&file, "{} {}", width, height)?;
         writeln!(&file, "255")?;
 
         for y in 0..height {
             for x in 0..width {
-                let is_red = self.red.iter().any(|g| {
-                    let gx = g.x - min_x;
-                    let gy = g.y - min_y;
-                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+1)*SCALE) &&
-                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+1)*SCALE)
-                });
-                let is_green = self.green.iter().any(|g| {
-                    let gx = g.x - min_x;
-                    let gy = g.y - min_y;
-                    (gx >= (x as i64)*SCALE && gx < ((x as i64)+1)*SCALE) &&
-                    (gy >= (y as i64)*SCALE && gy < ((y as i64)+1)*SCALE)
-                });
-
-                if is_red {
-                    write!(&file, "255 0 0 ")?;
-                } else if is_green {
-                    write!(&file, "0 255 0 ")?;
-                } else {
-                    write!(&file, "255 255 255 ")?;
-                }
+                let pixel = pixels[y][x];
+                write!(&file, "{} {} {} ", pixel.r, pixel.g, pixel.b)?;
             }
             writeln!(&file)?;
         }
@@ -112,23 +175,32 @@ pub fn main() {
     let mut map: FloorMap = FloorMap {
         red: vec![],
         green: vec![],
+        x_map: vec![],
+        y_map: vec![],
     };
     for line in content.lines() {
         //println!("Line: {}", line);
         let parts: Vec<i64> = line.split(",").map(|e| e.parse().unwrap()).collect();
         let point = Point {
             x: parts[0],
-            y: parts[1]
+            y: parts[1],
         };
         map.red.push(point);
     }
     println!("Red tiles loaded: {}", map.red.len());
 
+    map.save_ppm("day09_part2_initial.ppm").unwrap();
+    println!("Initial map saved");
+
+    compress_coordinates(&mut map);
+    println!("Coordinates compressed");
+
     green_tiles_border(&mut map);
     println!("Green borders drawn");
 
-    map.save_ppm("day09_part2_initial.ppm").unwrap();
-    println!("Initial map saved:\n{}", map);
+    map.save_ppm_compressed("day09_part2_compressed.ppm")
+        .unwrap();
+    println!("Compressed map saved");
 
     let total = solve(&mut map);
 
@@ -136,46 +208,71 @@ pub fn main() {
     println!("Total: {}", total);
 }
 
-fn solve(map: &mut FloorMap) -> i64 {
-    let mut combinations: Vec<(Point, Point)> = vec![];
-    for i in 0..map.red.len() {
-        for j in (i + 1)..map.red.len() {
-            if i != j {
-                combinations.push((map.red[i], map.red[j]));
-            }
+fn solve(map: &FloorMap) -> i64 {
+    let length = map.red.len();
+    let mid_top = length / 2;
+    let mid_bot = mid_top + 1;
+
+    let mut max_area: i64 = 0;
+
+    // ################## TOP HALF ##################
+    let corner = map.red[mid_top];
+
+    let mut lo = 0;
+    let mut hi = mid_top / 2;
+    while lo < hi {
+        let mid = (lo + hi) / 2;
+        if map.red[mid].x >= corner.x {
+            lo = mid + 1;
+        } else {
+            hi = mid;
         }
     }
-    println!("Total combinations: {}", combinations.len());
+    let y_bound = map.red[lo].y;
 
-    combinations.sort_by_cached_key(|p| {
-        area(p.0, p.1)
-    });
-    combinations.reverse();
-    println!("Combinations sorted: {}", combinations.len());
+    let mut j = mid_top - 1;
+    let mut max_x = 0;
+    while map.red[j].y <= y_bound {
+        if map.red[j].x >= max_x {
+            max_x = map.red[j].x;
+            let orig_corner = decompress_point(map, corner);
+            let orig_other = decompress_point(map, map.red[j]);
+            let area = (orig_corner.x - orig_other.x + 1) * (orig_other.y - orig_corner.y + 1);
+            max_area = max_area.max(area);
+        }
+        if j == 0 { break; }
+        j -= 1;
+    }
 
-    //println!("Combinations by area: {:#?}", combinations);
-    for (p1, p2) in combinations {
-        print!(".");
-        stdout().flush().unwrap();
-        let mut step_size = 65536 * 8;
-        loop {
-            //println!("Current step size: {}", step_size);
-            let success = validate_combination(map, &(p1, p2), step_size);
-            if !success {
-                break;
-            } else {
-                print!("+");
-                stdout().flush().unwrap();
-            }
-            if step_size == 1 {
-                println!();
-                println!("Largest area between points {:?} and {:?}", p1, p2);
-                return area(p1, p2);
-            }
-            step_size /= 2;
+    // ################# BOTTOM HALF ##################
+    let corner = map.red[mid_bot];
+
+    lo = (length + mid_bot) / 2;
+    hi = length - 1;
+    while lo < hi {
+        let mid = (lo + hi + 1) / 2;
+        if map.red[mid].x >= corner.x {
+            hi = mid - 1;
+        } else {
+            lo = mid;
         }
     }
-    panic!("No valid combination found");
+    let y_bound = map.red[lo].y;
+
+    j = mid_bot + 1;
+    max_x = 0;
+    while j < length && map.red[j].y >= y_bound {
+        if map.red[j].x >= max_x {
+            max_x = map.red[j].x;
+            let orig_corner = decompress_point(map, corner);
+            let orig_other = decompress_point(map, map.red[j]);
+            let area = (orig_corner.x - orig_other.x + 1) * (orig_corner.y - orig_other.y + 1);
+            max_area = max_area.max(area);
+        }
+        j += 1;
+    }
+
+    max_area
 }
 
 fn area(p1: Point, p2: Point) -> i64 {
@@ -184,65 +281,50 @@ fn area(p1: Point, p2: Point) -> i64 {
     width * height
 }
 
-fn validate_combination(map: &FloorMap, combination: &(Point, Point), step_size: usize) -> bool {
-    let (p1, p2) = combination;
+fn compress_coordinates(map: &mut FloorMap) {
+    use std::collections::BTreeSet;
 
-    let min_x = p1.x.min(p2.x);
-    let max_x = p1.x.max(p2.x);
-    let min_y = p1.y.min(p2.y);
-    let max_y = p1.y.max(p2.y);
+    // Sammle alle einzigartigen x- und y-Koordinaten
+    let mut x_coords: BTreeSet<i64> = BTreeSet::new();
+    let mut y_coords: BTreeSet<i64> = BTreeSet::new();
 
-    // for y in min_y..=max_y {
-    //     for x in min_x..=max_x {
-    //         let point = Point { x, y };
-    //         if !map.red.contains(&point) && !map.green.contains(&point) && is_inside(map, point) {
-    //             return false;
-    //         }
-    //     }
-    // }
-
-    let anti_p1 = Point{
-        x: p1.x,
-        y: p2.y
-    };
-    if !is_inside(map, anti_p1) {
-        return false;
-    }
-    let anti_p2 = Point{
-        x: p2.x,
-        y: p1.y
-    };
-    if !is_inside(map, anti_p2) {
-        return false;
+    for point in &map.red {
+        x_coords.insert(point.x);
+        y_coords.insert(point.y);
     }
 
-    for y in [min_y, max_y] {
-        for x in (min_x..=max_x).step_by(step_size) {
-            let point = Point { x, y };
-            //println!("Checking border point {:?}", point);
-            if map.green.contains(&point) || map.red.contains(&point) {
-                continue;
-            }
-            if !map.red.contains(&point) && !map.green.contains(&point) && is_inside(map, point) {
-                return false;
-            }
-        }
+    for point in &map.green {
+        x_coords.insert(point.x);
+        y_coords.insert(point.y);
     }
 
-    for y in (min_y..=max_y).step_by(step_size) {
-        for x in [min_x, max_x] {
-            let point = Point { x, y };
-            //println!("Checking border point {:?}", point);
-            if map.red.contains(&point) || map.green.contains(&point) {
-                continue;
-            }
-            if !map.red.contains(&point) && !map.green.contains(&point) && is_inside(map, point) {
-                return false;
-            }
-        }
+    // Erstelle Mapping von alter zu neuer Koordinate
+    map.x_map = x_coords.into_iter().collect();
+    map.y_map = y_coords.into_iter().collect();
+
+    // Komprimiere alle Punkte
+    for point in &mut map.red {
+        point.x = map.x_map.binary_search(&point.x).unwrap() as i64;
+        point.y = map.y_map.binary_search(&point.y).unwrap() as i64;
     }
 
-    true
+    for point in &mut map.green {
+        point.x = map.x_map.binary_search(&point.x).unwrap() as i64;
+        point.y = map.y_map.binary_search(&point.y).unwrap() as i64;
+    }
+
+    println!(
+        "Compressed from coordinate space to {}x{}",
+        map.x_map.len(),
+        map.y_map.len()
+    );
+}
+
+fn decompress_point(map: &FloorMap, point: Point) -> Point {
+    Point {
+        x: map.x_map[point.x as usize],
+        y: map.y_map[point.y as usize],
+    }
 }
 
 fn green_tiles_border(map: &mut FloorMap) {
@@ -268,24 +350,23 @@ fn green_tiles_border(map: &mut FloorMap) {
 }
 
 fn is_inside(map: &FloorMap, point: Point) -> bool {
-    let has_green_left = map.green.iter().any(|p| p.y == point.y && p.x < point.x);
-    if !has_green_left {
-        return false;
+    let mut inside = false;
+    let n = map.red.len();
+    
+    for i in 0..n {
+        let p1 = map.red[i];
+        let p2 = map.red[(i + 1) % n];
+        
+        if ((p1.y > point.y) != (p2.y > point.y)) {
+            let x_intersect = (p2.x - p1.x) * (point.y - p1.y) / (p2.y - p1.y) + p1.x;
+            
+            if point.x < x_intersect {
+                inside = !inside;
+            }
+        }
     }
-    let has_green_right = map.green.iter().any(|p| p.y == point.y && p.x > point.x);
-    if !has_green_right {
-        return false;
-    }
-    let has_green_above = map.green.iter().any(|p| p.x == point.x && p.y < point.y);
-    if !has_green_above {
-        return false;
-    }
-    let has_green_below = map.green.iter().any(|p| p.x == point.x && p.y > point.y);
-    if !has_green_below {
-        return false;
-    }
-
-    has_green_left && has_green_right && has_green_above && has_green_below
+    
+    inside
 }
 
 #[cfg(test)]
@@ -300,5 +381,27 @@ mod tests {
         let p1 = Point { x: 5, y: 5 };
         let p2 = Point { x: 1, y: 1 };
         assert_eq!(area(p1, p2), 16);
+    }
+
+    #[test]
+    fn test_example() {
+        let mut map = FloorMap {
+            red: vec![
+                Point { x: 7, y: 1 },
+                Point { x: 11, y: 1 },
+                Point { x: 11, y: 7 },
+                Point { x: 9, y: 7 },
+                Point { x: 9, y: 5 },
+                Point { x: 2, y: 5 },
+                Point { x: 2, y: 3 },
+                Point { x: 7, y: 3 },
+            ],
+            green: vec![],
+            x_map: vec![],
+            y_map: vec![],
+        };
+        green_tiles_border(&mut map);
+        compress_coordinates(&mut map);
+        assert_eq!(solve(&mut map), 24);
     }
 }
