@@ -1,9 +1,9 @@
-use std::{collections::{HashMap}, fs};
+use std::{collections::HashMap, fs, hash::{DefaultHasher, Hash, Hasher}};
 
 const INPUT_PATH: &str = "input/08/example.txt";
 //const INPUT_PATH: &str = "input/08/input.txt";
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd)]
 struct Vector3 {
     x: i32,
     y: i32,
@@ -13,6 +13,12 @@ struct Vector3 {
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct Circuit {
     junctions: Vec<Vector3>
+}
+
+#[derive(Debug)]
+struct Pair<T> {
+    p1: T,
+    p2: T
 }
 
 impl Vector3 {
@@ -30,26 +36,61 @@ impl Vector3 {
     }
 }
 
+impl Hash for Vector3 {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.x.hash(state);
+        self.y.hash(state);
+        self.z.hash(state);
+    }
+}
+
+impl Hash for Pair<Vector3> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        if self.p2 < self.p1  {
+            self.p2.hash(state);
+            self.p1.hash(state);
+        } else {
+            self.p1.hash(state);
+            self.p2.hash(state);
+        }
+    }
+}
+
 impl Circuit {
     fn extend(self: &mut Self, other: &Self) {
         self.junctions.extend(other.junctions.clone());
     }
 }
 
+fn hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
 pub fn main() {
+    // let p1 = Vector3{x: 1, y: 2, z: 3};
+    // let p2 = Vector3{x: 1, y: 1, z: 1};
+
+    // let pair1 = Pair{p1: p1.clone(), p2: p2.clone()};
+    // let pair2 = Pair{p1: p2.clone(), p2: p1.clone()};
+
+    // println!("{:?}: {:x}", &pair1, hash(&pair1));
+    // println!("{:?}: {:x}", &pair2, hash(&pair2));
+    // return;
+
     let content = fs::read_to_string(INPUT_PATH).unwrap();
     let lines: Vec<_> = content.lines().collect();
 
     let mut total = 0;
     let mut circuits: Vec<Circuit> = vec![];
-    for line in content.lines() {
+    for line in lines {
         //println!("Line: {}", line);
         let junction = Vector3::from_string(line);
         let mut circuit = Circuit { junctions: vec![] };
         circuit.junctions.push(junction);
         circuits.push(circuit);
     }
-    //println!("{:#?}", circuits);
 
     for iteration in 0..10 {
         let shortest_connection = shortest_distance(&circuits);
@@ -65,6 +106,11 @@ pub fn main() {
     }
 
     println!("Final circuits: {:?}", circuits);
+    println!("Total: {:?}", circuits.len());
+
+    for circuit in circuits {
+        println!("Test: {:?}", circuit.junctions.len());
+    }
 
     println!();
     println!("Total: {}", total);
