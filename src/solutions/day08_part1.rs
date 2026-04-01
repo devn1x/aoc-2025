@@ -16,7 +16,7 @@ struct Circuit {
 }
 
 #[derive(Debug)]
-struct Pair<T> {
+struct Pair<T: PartialOrd + Hash> {
     p1: T,
     p2: T
 }
@@ -44,7 +44,7 @@ impl Hash for Vector3 {
     }
 }
 
-impl Hash for Pair<Vector3> {
+impl<T: PartialOrd + Hash> Hash for Pair<&T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         if self.p2 < self.p1  {
             self.p2.hash(state);
@@ -69,15 +69,15 @@ fn hash<T: Hash>(t: &T) -> u64 {
 }
 
 pub fn main() {
-    // let p1 = Vector3{x: 1, y: 2, z: 3};
-    // let p2 = Vector3{x: 1, y: 1, z: 1};
+    let p1 = Vector3{x: 1, y: 2, z: 3};
+    let p2 = Vector3{x: 1, y: 1, z: 1};
 
-    // let pair1 = Pair{p1: p1.clone(), p2: p2.clone()};
-    // let pair2 = Pair{p1: p2.clone(), p2: p1.clone()};
+    let pair1 = Pair{p1: &p1.clone(), p2: &p2.clone()};
+    let pair2 = Pair{p1: &p2.clone(), p2: &p1.clone()};
 
-    // println!("{:?}: {:x}", &pair1, hash(&pair1));
-    // println!("{:?}: {:x}", &pair2, hash(&pair2));
-    // return;
+    println!("{:?}: {:x}", &pair1, hash(&pair1));
+    println!("{:?}: {:x}", &pair2, hash(&pair2));
+    return;
 
     let content = fs::read_to_string(INPUT_PATH).unwrap();
     let lines: Vec<_> = content.lines().collect();
