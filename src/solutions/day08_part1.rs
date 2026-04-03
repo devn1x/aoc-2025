@@ -1,21 +1,18 @@
 use std::{collections::HashMap, fs, hash::{DefaultHasher, Hash, Hasher}};
 
-const INPUT_PATH: &str = "input/08/example.txt";
-//const INPUT_PATH: &str = "input/08/input.txt";
+//const INPUT_PATH: &str = "input/08/example.txt";
+const INPUT_PATH: &str = "input/08/input.txt";
+
+const CONFIG_ITERATIONS: usize = 1000;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd)]
 struct Vector3 {
-    x: i32,
-    y: i32,
-    z: i32
+    x: i64,
+    y: i64,
+    z: i64
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct Circuit {
-    junctions: Vec<Vector3>
-}
-
-#[derive(Debug)]
+#[derive(Debug, Eq, Clone)]
 struct Pair<T: PartialOrd + Hash> {
     p1: T,
     p2: T
@@ -30,7 +27,7 @@ impl Vector3 {
             z: parts[2].parse().unwrap()
         }
     }
-    fn distance(self: &Self, other: &Self) -> i32 {
+    fn distance(self: &Self, other: &Self) -> i64 {
         let distance = ((other.x - self.x).pow(2) + (other.y - self.y).pow(2) + (other.z - self.z).pow(2)).isqrt();
         distance
     }
@@ -44,9 +41,9 @@ impl Hash for Vector3 {
     }
 }
 
-impl<T: PartialOrd + Hash> Hash for Pair<&T> {
+impl<T: PartialOrd + Hash> Hash for Pair<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        if self.p2 < self.p1  {
+        if self.p2 < self.p1 {
             self.p2.hash(state);
             self.p1.hash(state);
         } else {
@@ -56,9 +53,9 @@ impl<T: PartialOrd + Hash> Hash for Pair<&T> {
     }
 }
 
-impl Circuit {
-    fn extend(self: &mut Self, other: &Self) {
-        self.junctions.extend(other.junctions.clone());
+impl<T: PartialOrd + Hash> PartialEq for Pair<T> {
+    fn eq(&self, other: &Self) -> bool {
+        hash(self) == hash(other)
     }
 }
 
@@ -69,67 +66,82 @@ fn hash<T: Hash>(t: &T) -> u64 {
 }
 
 pub fn main() {
-    let p1 = Vector3{x: 1, y: 2, z: 3};
-    let p2 = Vector3{x: 1, y: 1, z: 1};
+    // let p1 = Vector3{x: 1, y: 2, z: 3};
+    // let p2 = Vector3{x: 1, y: 1, z: 1};
 
-    let pair1 = Pair{p1: &p1.clone(), p2: &p2.clone()};
-    let pair2 = Pair{p1: &p2.clone(), p2: &p1.clone()};
+    // let pair1 = Pair{p1: &p1.clone(), p2: &p2.clone()};
+    // let pair2 = Pair{p1: &p2.clone(), p2: &p1.clone()};
 
-    println!("{:?}: {:x}", &pair1, hash(&pair1));
-    println!("{:?}: {:x}", &pair2, hash(&pair2));
-    return;
+    // println!("{:?}: {:x}", &pair1, hash(&pair1));
+    // println!("{:?}: {:x}", &pair2, hash(&pair2));
+    // println!("Comparison: {:#}", &pair1 == &pair2);
+    // return;
 
     let content = fs::read_to_string(INPUT_PATH).unwrap();
     let lines: Vec<_> = content.lines().collect();
 
-    let mut total = 0;
-    let mut circuits: Vec<Circuit> = vec![];
+    let mut circuits: Vec<Vec<Vector3>> = vec![];
     for line in lines {
         //println!("Line: {}", line);
         let junction = Vector3::from_string(line);
-        let mut circuit = Circuit { junctions: vec![] };
-        circuit.junctions.push(junction);
+        let mut circuit = vec![];
+        circuit.push(junction);
         circuits.push(circuit);
     }
 
-    for iteration in 0..10 {
-        let shortest_connection = shortest_distance(&circuits);
-        
-        let circuit_idx = circuit_index_by_junction(&circuits, &shortest_connection.0);
-        let circuit2_idx = circuit_index_by_junction(&circuits, &shortest_connection.1);
+    // let mut processed_pairs: Vec<u64> = vec![];
+    let shortest_connections = shortest_distances(&circuits, CONFIG_ITERATIONS);
+    for shortest_connection in shortest_connections {
+        let circuit_idx = circuit_index_by_junction(&circuits, &shortest_connection.p1);
+        let circuit2_idx = circuit_index_by_junction(&circuits, &shortest_connection.p2);
 
-        let circuit2 = circuits[circuit2_idx].clone();
-        let circuit = &mut circuits[circuit_idx];
-        circuit.extend(&circuit2);
-
-        circuits.remove(circuit2_idx);
+        if circuit_idx != circuit2_idx {
+            let circuit2 = circuits[circuit2_idx].clone();
+            let circuit = &mut circuits[circuit_idx];
+            circuit.extend(circuit2);
+            circuits.remove(circuit2_idx);
+            // println!("Merged");
+        }
     }
 
-    println!("Final circuits: {:?}", circuits);
-    println!("Total: {:?}", circuits.len());
+    circuits.sort_by_cached_key(|f| f.len());
+    circuits.reverse();
+    // println!("Final circuits: {:#?}", circuits);
+    println!("Total circuits: {:?}", circuits.len());
 
-    for circuit in circuits {
-        println!("Test: {:?}", circuit.junctions.len());
+    // for circuit in &circuits {
+    //     println!("Test: {:?}", circuit.len());
+    // }
+
+    let mut total = 0;
+    for circuit in circuits.iter().take(3) {
+        let length = circuit.len();
+        if total == 0 {
+            total = length;
+        } else {
+            total *= length;
+        }
     }
 
     println!();
     println!("Total: {}", total);
 }
 
-fn shortest_distance(circuits: &Vec<Circuit>) -> (Vector3, Vector3) {
+fn shortest_distances(circuits: &Vec<Vec<Vector3>>, limit: usize) -> Vec<Pair<Vector3>> {
     let mut junctions: Vec<&Vector3> = vec![];
-    let mut distance_pairs: HashMap<(Vector3, Vector3), u64> = HashMap::new();
+    let mut distance_pairs: HashMap<Pair<Vector3>, u64> = HashMap::new();
     for circuit in circuits {
-        junctions.extend(&circuit.junctions);
+        junctions.extend(circuit);
     }
 
     for i in 0..junctions.len() {
+        let first = junctions[i].clone();
         for j in (i + 1)..junctions.len() {
-            let first = junctions[i].clone();
             let second = junctions[j].clone();
 
             let distance = first.distance(&second);
-            distance_pairs.insert((first, second), distance as u64);
+            let pair = Pair { p1: first.clone(), p2: second.clone() };
+            distance_pairs.insert(pair, distance as u64);
             //println!("Comparing {:?} to {:?} => {}", junctions[i], junctions[j], distance);
         }
     };
@@ -142,12 +154,12 @@ fn shortest_distance(circuits: &Vec<Circuit>) -> (Vector3, Vector3) {
     });
 
     //println!("Sorted pairs: {:#?}", sorted_pairs);
-    sorted_pairs.first().unwrap().0.clone()
+    sorted_pairs.iter().take(limit).map(|f| f.0.clone()).collect()
 }
 
-fn circuit_index_by_junction<'a>(circuits: &Vec<Circuit>, junction: &'a Vector3) -> usize {
+fn circuit_index_by_junction<'a>(circuits: &Vec<Vec<Vector3>>, junction: &'a Vector3) -> usize {
     for (index, circuit) in circuits.iter().enumerate() {
-        if circuit.junctions.contains(junction) {
+        if circuit.contains(junction) {
             return index;
         }
     }
