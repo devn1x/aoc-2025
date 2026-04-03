@@ -24,6 +24,7 @@ pub fn run(puzzle: Option<(u8, u8)>) -> Option<Puzzle> {
         Puzzle { day: 7, part: 1, main: crate::solutions::day07_part1::main },
         Puzzle { day: 7, part: 2, main: crate::solutions::day07_part2::main },
         Puzzle { day: 8, part: 1, main: crate::solutions::day08_part1::main },
+        Puzzle { day: 8, part: 2, main: crate::solutions::day08_part2::main },
         Puzzle { day: 9, part: 1, main: crate::solutions::day09_part1::main },
         Puzzle { day: 9, part: 2, main: crate::solutions::day09_part2::main },
     ];
